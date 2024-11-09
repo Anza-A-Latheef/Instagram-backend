@@ -3,13 +3,16 @@
 from .models import UserProfile,Post  # Import your custom user model
 from rest_framework import serializers
 from django.contrib.auth import authenticate
+from rest_framework import serializers
+from .models import Comment  # Assuming Comment is the model for comments
+
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     profile_picture = serializers.ImageField(required=False)
 
     class Meta:
         model = UserProfile
-        fields = ['username', 'email', 'password', 'profile_picture']
+        fields = ['username', 'email', 'password','first_name', 'profile_picture']
         extra_kwargs = {'password': {'write_only': True}}
 
     def validate_email(self, value):
@@ -52,7 +55,7 @@ class UserLoginSerializer(serializers.Serializer):
             # If username is not found, try to authenticate with email
             try:
                 user = authenticate(username=self.get_user_by_email(username), password=password)
-            except User.DoesNotExist:
+            except UserProfile.DoesNotExist:
                 raise serializers.ValidationError("Invalid credentials")
 
         if user is None:
@@ -97,3 +100,10 @@ class CreateSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         return Post.objects.create(**validated_data)
+    
+
+ 
+class CommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Comment
+        fields = '__all__'

@@ -1,21 +1,18 @@
 # instagramapp/views.py
 
 from rest_framework import generics
-from rest_framework.response import Response
+from rest_framework import viewsets
 from rest_framework import status
-from .serializers import UserRegistrationSerializer, UserLoginSerializer
-from django.contrib.auth import login
-from rest_framework.permissions import AllowAny
-
-from rest_framework import generics
-from .serializers import UserRegistrationSerializer
 from rest_framework.response import Response
+from rest_framework.decorators import action
+from django.shortcuts import get_object_or_404
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
-from .models import Post
-from .serializers import CreateSerializer
-
-from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken  # Make sure to import AccessToken
+from .serializers import UserRegistrationSerializer, UserLoginSerializer
+from .serializers import CreateSerializer , CommentSerializer
+from django.contrib.auth import login
+from .models import Post, Comment
 
 
 class UserRegistrationView(APIView):
@@ -53,6 +50,7 @@ class UserLoginView(generics.GenericAPIView):
             "username": user.username,
             "email": user.email,
             "user_id":user.id,
+            'first_name': user.first_name,
             'profile_picture_url': request.build_absolute_uri(user.profile_picture.url) if user.profile_picture else None,
 
         }, status=status.HTTP_200_OK)
@@ -82,3 +80,23 @@ class PostsViews(generics.GenericAPIView):
         post = Post.objects.filter(id=request.data['id']).delete()
 
         return Response("Sucessfully deleted", status=status.HTTP_200_OK)
+    
+    
+class CommentViewSet(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+
+    # Endpoint to retrieve all comments for a post
+    @action(detail=True, methods=['get'])
+    def list_comments(self, request, post_id=None):
+        post = get_object_or_404(Post, id=post_id)
+        comments = Comment.objects.filter(post=post).order_by('created_at')
+        serializer = CommentSerializer(comments, many=True)
+        return Response(serializer.data)
+
+    # Endpoint to create a new comment
+    def create(self, request):
+        serializer = CommentSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
