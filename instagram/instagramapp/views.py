@@ -8,7 +8,7 @@ from rest_framework.decorators import action
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
-from rest_framework_simplejwt.tokens import RefreshToken, AccessToken  # Make sure to import AccessToken
+from rest_framework_simplejwt.tokens import RefreshToken, AccessToken  
 from .serializers import UserRegistrationSerializer, UserLoginSerializer
 from .serializers import CreateSerializer , CommentSerializer
 from django.contrib.auth import login
@@ -28,7 +28,7 @@ class UserRegistrationView(APIView):
             }, status=status.HTTP_201_CREATED)
             
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
 
 class UserLoginView(generics.GenericAPIView):
     serializer_class = UserLoginSerializer
@@ -38,8 +38,7 @@ class UserLoginView(generics.GenericAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
-        
-        # Generate access and refresh tokens
+
         access = AccessToken.for_user(user)
         refresh = RefreshToken.for_user(user)
 
@@ -85,7 +84,6 @@ class PostsViews(generics.GenericAPIView):
 class CommentViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
-    # Endpoint to retrieve all comments for a post
     @action(detail=True, methods=['get'])
     def list_comments(self, request, post_id=None):
         post = get_object_or_404(Post, id=post_id)
@@ -93,7 +91,6 @@ class CommentViewSet(viewsets.ViewSet):
         serializer = CommentSerializer(comments, many=True)
         return Response(serializer.data)
 
-    # Endpoint to create a new comment
     def create(self, request):
         serializer = CommentSerializer(data=request.data)
         if serializer.is_valid():

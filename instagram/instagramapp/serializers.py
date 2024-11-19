@@ -1,10 +1,8 @@
-# instagramapp/serializers.py
-
-from .models import UserProfile,Post  # Import your custom user model
+from .models import UserProfile,Post  
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from rest_framework import serializers
-from .models import Comment  # Assuming Comment is the model for comments
+from .models import Comment  
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -23,14 +21,12 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         profile_picture = validated_data.pop('profile_picture', None)
         user = UserProfile(**validated_data)
-        user.set_password(validated_data['password'])  # Encrypt the password
+        user.set_password(validated_data['password'])  
         user.save()
 
-        # Handle the profile picture if it was provided
         if profile_picture:
             user.profile_picture = profile_picture
             user.save()
-            # Create a full URL for the profile picture
         request = self.context.get('request')
         if user.profile_picture:
             user.profile_picture_url = request.build_absolute_uri(user.profile_picture.url)
@@ -48,11 +44,9 @@ class UserLoginSerializer(serializers.Serializer):
         username = attrs.get('username')
         password = attrs.get('password')
 
-        # Authenticate using the username or email
         user = authenticate(username=username, password=password)
 
         if user is None:
-            # If username is not found, try to authenticate with email
             try:
                 user = authenticate(username=self.get_user_by_email(username), password=password)
             except UserProfile.DoesNotExist:
@@ -70,6 +64,15 @@ class UserLoginSerializer(serializers.Serializer):
         return User.objects.get(email=email).username
 
 
+ 
+class CommentSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username', read_only=True)
+    
+    class Meta:
+        model = Comment
+        fields = ['id','user', 'post', 'content','username']
+
+
 class CreateSerializer(serializers.ModelSerializer):
     image = serializers.ImageField()
     username = serializers.CharField(source='user.username', read_only=True)
@@ -77,8 +80,7 @@ class CreateSerializer(serializers.ModelSerializer):
     is_same_user=serializers.SerializerMethodField()
     user=serializers.SerializerMethodField()
     profile_picture=serializers.SerializerMethodField()
-
-
+    comments = CommentSerializer(many=True, read_only=True) 
 
     def get_image(self, obj):
         return self.context['request'].build_absolute_uri(obj.image.url)
@@ -95,15 +97,10 @@ class CreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ('id','caption','image','created_at','user','username','profile_picture','created_by','is_same_user')
-        read_only_fields = ['user']
+        fields = ('id','caption','image','created_at','user','username','profile_picture','created_by','is_same_user', 'comments')
+        read_only_fields = ['created_by']
     
     def create(self, validated_data):
         return Post.objects.create(**validated_data)
     
 
- 
-class CommentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Comment
-        fields = '__all__'

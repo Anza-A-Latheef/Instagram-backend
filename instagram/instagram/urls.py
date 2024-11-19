@@ -22,7 +22,7 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include('instagramapp.urls')),  # Include the app URLs
+    path('api/', include('instagramapp.urls')), 
 
 ]
 

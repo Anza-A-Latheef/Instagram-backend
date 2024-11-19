@@ -8,7 +8,6 @@ User = get_user_model()
 class CustomAuthBackend(ModelBackend):
     def authenticate(self, request, username=None, password=None, **kwargs):
         try:
-            # Check if username is an email
             if '@' in username:
                 user = User.objects.get(email=username)
             else:
